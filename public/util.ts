@@ -80,6 +80,12 @@ const operations: Operation[] = [
     method: "DELETE",
     fields: { id: "input" },
   },
+  {
+    name: "Update Username",
+    endpoint: "/api/users/username",
+    method: "PATCH",
+    fields: { currentUsername: "input", newUsername: "input" },
+  },
   //
   // ...
   //

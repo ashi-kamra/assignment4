@@ -46,7 +46,7 @@ main {
 }
 
 .operation {
-  border: 1px solid #ccc;
+  border: 1px solid #0000;
   border-radius: 6px;
   padding: 1em;
   list-style: none;
@@ -57,5 +57,5 @@ main {
 }
 
 #response-text {
-  font-family: 'Courier New', Courier, monospace;
+  font-family: 'Times New Roman', Times, serif;
 }
