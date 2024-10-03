@@ -152,6 +152,42 @@ class Routes {
     const fromOid = (await Authing.getUserByUsername(from))._id;
     return await Friending.rejectRequest(fromOid, user);
   }
+
+  ////NEWLY ADDED ROUTES///
+  @Router.post("/user/register")
+  async registerUser() {
+    //registering a user
+  }
+
+  @Router.get("/homepage")
+  async homepage() {
+    //displaying a users homepage
+  }
+
+  @Router.post("/connections/new")
+  async connect() {
+    //making a new connection
+  }
+
+  @Router.post("/connection/message")
+  async message() {
+    //messaging a connection
+  }
+
+  @Router.put("/consent")
+  async consentSurvey() {
+    //conducting consent survey
+  }
+
+  @Router.put("/echo/add")
+  async addEcho() {
+    //adding a label to a message
+  }
+
+  @Router.delete("/echo/remove")
+  async removeEcho() {
+    //removing a label to a message
+  }
 }
 
 /** The web app. */
