@@ -22,23 +22,30 @@ export default class MessageConcept {
     return { msg: "Message sent!", _id: await this.messageHistory.readOne({ _id }) }; //can i just put id instead of the readOne?
   }
 
+  async getMessage(message: ObjectId) {
+    const messageObj = await this.messageHistory.readOne({ message: message });
+    if (!messageObj) {
+      throw new NotFoundError(`Message ${message} does not exist!`);
+    }
+    return messageObj;
+  }
+
   async delete(_id: ObjectId, user: ObjectId) {
     await this.assertUserIsSender(_id, user);
-    //should I or assertUserIsSender?
+    await this.assertUserIsReceiver(_id, user);
     await this.messageHistory.deleteOne({ _id });
     return { msg: "Post deleted successfully!" };
   }
 
-  //   ARE THESE NECESSARY? SHOULD I DO THEM BY THE USER TOO?
-  //   async getBySender(_id: ObjectId, sender: ObjectId, user: ObjectId) {
-  //     await this.assertUserIsSender(_id, user);
-  //     return await this.messageHistory.readMany({ sender: sender });
-  //   }
-
-  //   async getByReceiver(_id: ObjectId, receiver: ObjectId, user: ObjectId) {
-  //     await this.assertUserIsReceiver(_id, user);
-  //     return await this.messageHistory.readMany({ receiver: receiver });
-  //   }
+  async assertOwner(user: ObjectId, message: ObjectId) {
+    const messageObj = await this.messageHistory.readOne({ message: message });
+    if (!messageObj) {
+      throw new NotFoundError(`Message ${messageObj} does not exist!`);
+    }
+    if (user.toString() !== messageObj.sender.toString() || messageObj.receiver.toString()) {
+      throw new NotAllowedError("User is not sender or receiver of item!");
+    }
+  }
 
   private async assertUserIsSender(_id: ObjectId, user: ObjectId) {
     const message = await this.messageHistory.readOne({ _id });

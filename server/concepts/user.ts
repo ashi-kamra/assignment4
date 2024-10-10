@@ -24,6 +24,7 @@ export default class UserConcept {
     await this.assertGoodCredentials(username);
     const userId: string = await this.generateUniqueUserId();
     const _id = await this.users.createOne({ username, userId }); //object id for the user itself in mongoDB
+    return { msg: "User created successfully!", user: await this.users.readOne({ _id }) };
   }
 
   private async generateUniqueUserId() {
@@ -37,8 +38,18 @@ export default class UserConcept {
     }
   }
 
-  async getUsers(_id: ObjectId) {
+  //do i need all three gets?
+
+  async getUserInfo(_id: ObjectId) {
     const user = await this.users.readOne({ _id });
+    if (!user) {
+      throw new NotFoundError(`User not found!`);
+    }
+    return this.hideId(user);
+  }
+
+  async getUserbyName(username: string) {
+    const user = await this.users.readOne({ username: username });
     if (!user) {
       throw new NotFoundError(`User not found!`);
     }
@@ -51,6 +62,14 @@ export default class UserConcept {
       throw new NotFoundError(`No user of this id exists!`);
     }
     return this.hideId(user);
+  }
+
+  async getId(_id: ObjectId) {
+    const user = await this.users.readOne({ _id });
+    if (!user) {
+      throw new NotFoundError("No user of this id exists!");
+    }
+    return user.userId;
   }
 
   async hideId(user: UserDoc) {

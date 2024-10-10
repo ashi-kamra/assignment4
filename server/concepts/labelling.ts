@@ -4,6 +4,7 @@ import { BadValuesError, NotAllowedError, NotFoundError } from "./errors";
 
 export interface ItemDoc extends BaseDoc {
   //itemType
+  owner: ObjectId;
   item: ObjectId;
   label: string;
 }
@@ -17,10 +18,10 @@ export default class LabelConcept {
     void this.items.collection.createIndex({ item: 1 });
   }
 
-  async addLabel(item: ObjectId, label: string) {
+  async addLabel(owner: ObjectId, item: ObjectId, label: string) {
     await this.assertGoodLabel(label);
     await this.assertLabelUnique(label);
-    const _id = await this.items.createOne({ item, label });
+    const _id = await this.items.createOne({ owner, item, label });
     return { _id, msg: "Label added successfully!" };
   }
 
@@ -33,6 +34,7 @@ export default class LabelConcept {
   }
 
   async removeLabel(item: ObjectId) {
+    await this.assertHasLabel(item);
     await this.items.deleteOne({ item });
     return { msg: "Label removed successfully!" };
   }
@@ -46,6 +48,16 @@ export default class LabelConcept {
   private async assertLabelUnique(label: string) {
     if (await this.items.readOne({ label })) {
       throw new NotAllowedError(`User with username ${label} already exists!`);
+    }
+  }
+
+  private async assertHasLabel(message: ObjectId) {
+    const item = await this.items.readOne({ message: message });
+    if (!item) {
+      throw new NotFoundError(`Item does not exist!`);
+    }
+    if (!item.label) {
+      throw new NotFoundError(`Label does not exist for this item: ${item}!`);
     }
   }
 }

@@ -1,12 +1,10 @@
-import { ObjectId } from "mongodb";
-
 import { Router, getExpressRouter } from "./framework/router";
 
-import { Authing, Friending, Posting, Sessioning } from "./app";
-import { PostOptions } from "./concepts/posting";
+import { Authing, Connecting, Consenting, Friending, Labelling, Messaging, Sessioning, User } from "./app";
 import { SessionDoc } from "./concepts/sessioning";
 import Responses from "./responses";
 
+import { ObjectId } from "mongodb";
 import { z } from "zod";
 
 /**
@@ -70,42 +68,6 @@ class Routes {
     return { msg: "Logged out!" };
   }
 
-  @Router.get("/posts")
-  @Router.validate(z.object({ author: z.string().optional() }))
-  async getPosts(author?: string) {
-    let posts;
-    if (author) {
-      const id = (await Authing.getUserByUsername(author))._id;
-      posts = await Posting.getByAuthor(id);
-    } else {
-      posts = await Posting.getPosts();
-    }
-    return Responses.posts(posts);
-  }
-
-  @Router.post("/posts")
-  async createPost(session: SessionDoc, content: string, options?: PostOptions) {
-    const user = Sessioning.getUser(session);
-    const created = await Posting.create(user, content, options);
-    return { msg: created.msg, post: await Responses.post(created.post) };
-  }
-
-  @Router.patch("/posts/:id")
-  async updatePost(session: SessionDoc, id: string, content?: string, options?: PostOptions) {
-    const user = Sessioning.getUser(session);
-    const oid = new ObjectId(id);
-    await Posting.assertAuthorIsUser(oid, user);
-    return await Posting.update(oid, content, options);
-  }
-
-  @Router.delete("/posts/:id")
-  async deletePost(session: SessionDoc, id: string) {
-    const user = Sessioning.getUser(session);
-    const oid = new ObjectId(id);
-    await Posting.assertAuthorIsUser(oid, user);
-    return Posting.delete(oid);
-  }
-
   @Router.get("/friends")
   async getFriends(session: SessionDoc) {
     const user = Sessioning.getUser(session);
@@ -155,37 +117,76 @@ class Routes {
 
   ////NEWLY ADDED ROUTES///
   @Router.post("/user/register")
-  async registerUser() {
+  async registerUser(session: SessionDoc, username: string) {
     //registering a user
+    Sessioning.isLoggedOut(session);
+    return await User.registerUser(username);
+  }
+
+  @Router.patch("/users/username")
+  async changeUsername(session: SessionDoc, username: string) {
+    ///use sessioning????
+    const sessionUser = Sessioning.getUser(session); //which get user do i use??? what is the difference
+    const user = await User.getUserInfo(sessionUser);
+    return await User.updateUsername(user._id, username);
   }
 
   @Router.get("/homepage")
-  async homepage() {
+  async homepage(session: SessionDoc) {
+    const sessionUser = Sessioning.getUser(session);
+    const user = await User.getUserInfo(sessionUser);
+    return await Connecting.displayConnections(user._id);
     //displaying a users homepage
   }
 
-  @Router.post("/connections/new")
-  async connect() {
+  @Router.post("/connector")
+  async connect(session: SessionDoc, user2_id: string) {
+    const sessionUser = Sessioning.getUser(session);
+    const user1 = await User.getUserInfo(sessionUser);
+    const user2 = await User.getUserbyId(user2_id);
+    return await Connecting.makeConnection(user1._id, user2._id);
+
     //making a new connection
   }
 
   @Router.post("/connection/message")
-  async message() {
+  async message(session: SessionDoc, message: ObjectId, receiver: string) {
+    const sessionUser = Sessioning.getUser(session);
+    const user = await User.getUserInfo(sessionUser);
+    const user2 = await User.getUserbyName(receiver);
+    return await Messaging.sendMessage(message, user._id, user2._id);
     //messaging a connection
   }
 
   @Router.put("/consent")
-  async consentSurvey() {
+  async consentSurvey(session: SessionDoc, message: ObjectId, consent: Boolean) {
+    const sessionUser = Sessioning.getUser(session);
+    const user = await User.getUserInfo(sessionUser);
+    await Messaging.assertOwner(user._id, message);
+    const content = await Messaging.getMessage(message);
+    await Consenting.indicateConsent(content._id, consent, content.sender, content.receiver);
+    const userConsent = await Consenting.getConsent(content._id);
+    if (userConsent === false) {
+      await Messaging.delete(user._id, message);
+    }
     //conducting consent survey
   }
 
   @Router.put("/echo/add")
-  async addEcho() {
+  async addEcho(session: SessionDoc, label: string, message: ObjectId) {
+    const sessionUser = Sessioning.getUser(session); //which get user do i use??? what is the difference
+    const user = await User.getUserInfo(sessionUser);
+    await Messaging.assertOwner(user._id, message);
+    return await Labelling.addLabel(user._id, message, label);
     //adding a label to a message
   }
 
   @Router.delete("/echo/remove")
-  async removeEcho() {
+  async removeEcho(session: SessionDoc, message: ObjectId) {
+    const sessionUser = Sessioning.getUser(session);
+    const user = await User.getUserInfo(sessionUser);
+    await Messaging.assertOwner(user._id, message);
+    return await Labelling.removeLabel(message);
     //removing a label to a message
   }
 }
