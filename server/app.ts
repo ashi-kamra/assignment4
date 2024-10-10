@@ -1,5 +1,6 @@
 import AuthenticatingConcept from "./concepts/authenticating";
 import FriendingConcept from "./concepts/friending";
+import PostingConcept from "./concepts/posting";
 import SessioningConcept from "./concepts/sessioning";
 
 //NEW concepts
@@ -14,6 +15,7 @@ import UserConcept from "./concepts/user";
 export const Sessioning = new SessioningConcept();
 export const Authing = new AuthenticatingConcept("users");
 export const Friending = new FriendingConcept("friends");
+export const Posting = new PostingConcept("posts");
 
 //NEW
 export const User = new UserConcept("users");
